@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ScentLive Pro - Guia de Perfumes para Live</title>
+    <!-- Tailwind CSS para estilização responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonte Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Configuração PWA básica via Manifesto embutido -->
+    <meta name="theme-color" content="#090d16">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #090d16;
+            color: #f8fafc;
+        }
+        /* Ocultar barra de rolagem horizontal mantendo funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Superfície limpa com borda sutil */
+        .clean-card {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .clean-card:hover {
+            border-color: rgba(245, 158, 11, 0.35);
+            background: rgba(15, 23, 42, 0.92);
+        }
+        .live-active-card {
+            border-color: rgba(245, 158, 11, 0.45);
+            background: rgba(15, 23, 42, 0.94);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 select-none antialiased">
+
+    <!-- Cabeçalho Fixo Minimalista -->
+    <header class="sticky top-0 z-30 bg-[#090d16]/90 backdrop-blur-md border-b border-slate-800/70 px-4 pt-3.5 pb-2.5">
+        <div class="max-w-lg mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-semibold tracking-tight text-white leading-none">ScentLive <span class="text-amber-400">Pro</span></h1>
+                    <p id="headerStockSummary" class="text-[11px] text-slate-400 mt-1">Cola rápida para lives</p>
+                </div>
+            </div>
+            
+            <!-- Botão Novo Perfume Limpo -->
+            <button onclick="openAddModal()" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 border border-slate-700/70 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition active:scale-95">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Adicionar</span>
+            </button>
+        </div>
+
+        <!-- Faixa de Status do Modo Live (visível apenas quando ativado) -->
+        <div id="liveBanner" class="max-w-lg mx-auto mt-2.5 hidden items-center justify-between px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-300">
+            <span class="font-medium">Modo Live ativo: argumentos e curiosidades visíveis</span>
+            <button onclick="toggleLiveMode()" class="underline text-amber-200 hover:text-white ml-2 shrink-0">Desativar</button>
+        </div>
+
+        <!-- Barra de Pesquisa Limpa -->
+        <div class="max-w-lg mx-auto mt-3 relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input 
+                type="text" 
+                id="searchInput"
+                oninput="filterPerfumes()"
+                placeholder="Buscar nome, inspiração ou nota..." 
+                class="w-full bg-slate-900/80 border border-slate-800 text-sm text-white placeholder-slate-500 rounded-xl pl-10 pr-9 py-2 focus:outline-none focus:border-amber-500/50 transition"
+            >
+            <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Filtros por Categoria (Sem poluição visual) -->
+        <div class="max-w-lg mx-auto mt-2.5 flex gap-1.5 overflow-x-auto no-scrollbar pb-1" id="categoryTabs">
+            <button onclick="setCategory('todos')" data-cat="todos" class="cat-btn active shrink-0 px-3 py-1 rounded-lg text-xs font-medium bg-amber-500 text-slate-950 transition">
+                Todos (<span id="count-todos">0</span>)
+            </button>
+            <button onclick="setCategory('noturno')" data-cat="noturno" class="cat-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                Noite
+            </button>
+            <button onclick="setCategory('versatil')" data-cat="versatil" class="cat-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                Dia a dia
+            </button>
+            <button onclick="setCategory('fresco')" data-cat="fresco" class="cat-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                Frescos
+            </button>
+            <button onclick="setCategory('feminino')" data-cat="feminino" class="cat-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+                Femininos
+            </button>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-lg mx-auto px-4 pt-3.5">
+        
+        <!-- Dica Discreta de Instalação PWA -->
+        <div id="installBanner" class="mb-3.5 px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between gap-2">
+            <p class="text-xs text-slate-400 leading-snug">
+                <span class="text-slate-200 font-medium">Dica:</span> Adicione à Tela Inicial do celular para usar como app.
+            </p>
+            <button onclick="document.getElementById('installBanner').remove()" class="text-slate-500 hover:text-slate-300 p-1 shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+
+        <!-- Lista de Perfumes em Grade Compacta (Lado a Lado) -->
+        <div id="perfumeList" class="grid grid-cols-2 gap-2">
+            <!-- Os cards serão renderizados via JavaScript -->
+        </div>
+
+        <!-- Estado Vazio -->
+        <div id="emptyState" class="hidden text-center py-14">
+            <p class="text-sm font-medium text-slate-400">Nenhum perfume encontrado</p>
+            <p class="text-xs text-slate-500 mt-1">Tente outro termo na busca ou mude o filtro.</p>
+        </div>
+    </main>
+
+    <!-- Barra de Navegação Inferior Limpa -->
+    <nav class="fixed bottom-0 inset-x-0 z-30 bg-[#090d16]/95 backdrop-blur-md border-t border-slate-800/70 px-6 py-2">
+        <div class="max-w-lg mx-auto flex items-center justify-around">
+            <button onclick="switchView('catalogo')" id="nav-catalogo" class="flex flex-col items-center gap-1 py-1 px-3 text-amber-400 transition">
+                <i data-lucide="package" class="w-4 h-4"></i>
+                <span class="text-[11px] font-medium">Estoque</span>
+            </button>
+            <button onclick="switchView('combos')" id="nav-combos" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span class="text-[11px] font-medium">Combos</span>
+            </button>
+            <button onclick="toggleLiveMode()" id="nav-livemode" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition">
+                <i data-lucide="mic" class="w-4 h-4"></i>
+                <span class="text-[11px] font-medium">Modo Live</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Modal de Detalhes / Cola Rápida para Live -->
+    <div id="detailModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4">
+        <div class="bg-slate-900 border-t sm:border border-slate-800 w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 max-h-[88vh] overflow-y-auto">
+            <div class="w-10 h-1 bg-slate-700/80 rounded-full mx-auto mb-4 sm:hidden"></div>
+            
+            <div class="flex justify-between items-start gap-3 pb-3.5 border-b border-slate-800/80">
+                <div>
+                    <p id="modalCategoryBadge" class="text-[11px] font-medium text-amber-400"></p>
+                    <h2 id="modalTitle" class="text-lg font-bold text-white leading-snug mt-0.5"></h2>
+                    <p id="modalBrand" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="closeDetailModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Inspiração e Pitch em Layout Limpo -->
+            <div class="mt-4 space-y-3">
+                <div>
+                    <span class="text-[11px] font-medium text-slate-400 block">Inspiração</span>
+                    <p id="modalInspiration" class="text-sm font-semibold text-amber-300 mt-0.5"></p>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-semibold text-slate-300">Fala para a live</span>
+                        <button onclick="copyPitch()" class="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copiar
+                        </button>
+                    </div>
+                    <p id="modalPitch" class="text-xs text-slate-200 leading-relaxed"></p>
+                </div>
+
+                <!-- Fixação e Projeção -->
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
+                    <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800/70">
+                        <span class="text-[11px] text-slate-400 block">Fixação</span>
+                        <span id="modalFixation" class="text-xs font-semibold text-white mt-0.5 block"></span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800/70">
+                        <span class="text-[11px] text-slate-400 block">Projeção</span>
+                        <span id="modalProjection" class="text-xs font-semibold text-white mt-0.5 block"></span>
+                    </div>
+                </div>
+
+                <!-- Pirâmide Olfativa -->
+                <div class="pt-1">
+                    <span class="text-[11px] font-medium text-slate-400 block mb-1.5">Notas olfativas</span>
+                    <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800/70 space-y-1.5 text-xs">
+                        <p><span class="text-slate-400">Topo:</span> <span id="modalTopNotes" class="text-slate-200"></span></p>
+                        <p><span class="text-slate-400">Corpo:</span> <span id="modalHeartNotes" class="text-slate-200"></span></p>
+                        <p><span class="text-slate-400">Fundo:</span> <span id="modalBaseNotes" class="text-slate-200"></span></p>
+                    </div>
+                </div>
+
+                <!-- Ideal Para -->
+                <div class="pt-1">
+                    <span class="text-[11px] font-medium text-slate-400 block mb-1">Ideal para</span>
+                    <p id="modalIdeal" class="text-xs text-slate-300 leading-relaxed"></p>
+                </div>
+
+                <!-- Curiosidades para Live -->
+                <div class="pt-1">
+                    <span class="text-[11px] font-medium text-amber-400/90 block mb-1">Curiosidades para a live</span>
+                    <div class="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                        <p id="modalTrivia" class="text-xs text-slate-200 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controle de Estoque no Modal -->
+            <div class="mt-5 pt-3.5 border-t border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] text-slate-400 block">Status</span>
+                    <span id="modalStockStatus" class="text-xs font-semibold"></span>
+                </div>
+                <button id="toggleStockBtn" onclick="toggleCurrentStock()" class="px-3.5 py-2 rounded-xl font-medium text-xs transition active:scale-95">
+                    Alterar status
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Adicionar Novo Perfume -->
+    <div id="addModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4">
+        <div class="bg-slate-900 border-t sm:border border-slate-800 w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 max-h-[88vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h2 class="text-base font-bold text-white">Novo perfume</h2>
+                <button onclick="closeAddModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="addPerfumeForm" onsubmit="saveNewPerfume(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1">Nome do perfume</label>
+                    <input type="text" id="newName" required placeholder="Ex: Lattafa Khamrah" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Categoria</label>
+                        <select id="newCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                            <option value="noturno">Noite</option>
+                            <option value="versatil">Dia a dia</option>
+                            <option value="fresco">Frescos</option>
+                            <option value="feminino">Femininos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Inspiração</label>
+                        <input type="text" id="newInspiration" required placeholder="Ex: Angels' Share" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Fixação</label>
+                        <input type="text" id="newFixation" placeholder="Ex: Alta (8h a 10h)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Projeção</label>
+                        <input type="text" id="newProjection" placeholder="Ex: Forte na 1ª hora" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1">Notas olfativas</label>
+                    <input type="text" id="newNotes" placeholder="Ex: Canela, tâmara, baunilha" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1">Ideal para</label>
+                    <input type="text" id="newIdeal" placeholder="Ex: Noites frias e encontros" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1">Curiosidade para a live</label>
+                    <input type="text" id="newTrivia" placeholder="Ex: Campeão de visualizações em resenhas árabes" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <button type="submit" class="w-full py-2.5 mt-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm transition">
+                    Salvar no estoque
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notificação Toast Limpa -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-800 border border-slate-700 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="toastMsg">Pronto!</span>
+    </div>
+
+    <script>
+        // Banco de dados inicial com TODO o estoque informado pelo usuário
+        let perfumesData = [
+            {
+                id: 1,
+                name: "Lattafa Asad EDP 100ml",
+                brand: "Lattafa Perfumes",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Dior Sauvage Elixir",
+                fixation: "Alta (8h a 10h+)",
+                projection: "Forte nas primeiras 2h",
+                topNotes: "Pimenta preta, abacaxi e tabaco",
+                heartNotes: "Café, patchouli e íris",
+                baseNotes: "Baunilha, âmbar, madeira seca e benjoim",
+                ideal: "Noites frias ou amenas, jantares, encontros e eventos formais.",
+                pitch: "O rei dos elogios noturnos! Tem a mesma proposta poderosa do Sauvage Elixir, com pimenta preta, café e baunilha cremosa que grudam na pele.",
+                trivia: "Ficou famoso mundialmente como a alternativa árabe mais comentada do Sauvage Elixir, entregando um toque mais adocicado de baunilha e café.",
+                inStock: true
+            },
+            {
+                id: 2,
+                name: "Afnan 9 PM Elixir Parfum Intense",
+                brand: "Afnan",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Jean Paul Gaultier Le Male Elixir",
+                fixation: "Altíssima (10h a 14h)",
+                projection: "Rastro muito intenso",
+                topNotes: "Cardamomo, noz-moscada e elemi",
+                heartNotes: "Lavanda, couro e pimenta-da-jamaica",
+                baseNotes: "Baunilha, patchouli e resinas ambaradas",
+                ideal: "Baladas, festas, inverno e noites em que você quer máxima presença.",
+                pitch: "Perfume de balada e sedução máxima! Concentração Parfum Intense que projeta muito e deixa rastro doce, especiado e sensual por horas.",
+                trivia: "Eleva a proposta noturna da linha 9 PM com concentração mais encorpada e nuances quentes de couro e especiarias que resistem a noites longas.",
+                inStock: true
+            },
+            {
+                id: 3,
+                name: "Attar Al Wesal EDP 100ml",
+                brand: "Al Wataniah / Lattafa",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Jean Paul Gaultier Ultra Male",
+                fixation: "Alta (8h a 10h)",
+                projection: "Marcante e envolvente",
+                topNotes: "Pera, lavanda, hortelã e bergamota",
+                heartNotes: "Canela, sálvia e cominho",
+                baseNotes: "Baunilha negra, âmbar, cedro e patchouli",
+                ideal: "Baladas, festas, encontros e clima ameno/noturno.",
+                pitch: "Abertura suculenta de pera com hortelã que evolui para uma baunilha negra com canela super sedutora. Imbatível para sair à noite!",
+                trivia: "O contraste entre a pera fresca na saída e a baunilha escura com canela na secagem é o que faz esse estilo explodir em elogios em festas.",
+                inStock: true
+            },
+            {
+                id: 4,
+                name: "Mawwal Malek EDP 100ml",
+                brand: "Mawwal Arabia",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Linha Dior Sauvage Elixir (Aromático Especiado)",
+                fixation: "Alta (8h+)",
+                projection: "Forte e sofisticada",
+                topNotes: "Toranja, cardamomo, canela e noz-moscada",
+                heartNotes: "Lavanda aromática",
+                baseNotes: "Alcaçuz, sândalo, âmbar, patchouli e vetiver",
+                ideal: "Encontros, eventos sociais, reuniões importantes e clima ameno.",
+                pitch: "Perfume árabe de presença executiva e sedutora. Une especiarias quentes com lavanda e sândalo para transmitir confiança imediata.",
+                trivia: "A nota de alcaçuz junto ao sândalo dá um acabamento elegante e levemente adocicado que diferencia o perfume na secagem.",
+                inStock: true
+            },
+            {
+                id: 5,
+                name: "Mawwal Royal Amber EDP 100ml",
+                brand: "Mawwal Arabia (Unissex)",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Perfumaria de Nicho Oriental (Maturado em Carvalho)",
+                fixation: "Altíssima (10h+)",
+                projection: "Luxuosa e expansiva",
+                topNotes: "Bergamota e coentro",
+                heartNotes: "Jasmim, rosa, tuberosa e açafrão",
+                baseNotes: "Baunilha, âmbar, oud, olíbano e madeira guaiac",
+                ideal: "Casamentos, festas de gala, noites frias e amantes de perfumes exclusivos.",
+                pitch: "Envelhecido por 6 meses em barris de carvalho! É um elixir unissex de nicho com açafrão, âmbar e madeiras nobres para ocasiões especiais.",
+                trivia: "Passa por um processo de maturação de seis meses em barris de carvalho, inspirando-se na tradição antiga de envelhecer elixires nobres.",
+                inStock: true
+            },
+            {
+                id: 18,
+                name: "Dom Homme 8 EDP 100ml",
+                brand: "LAB 8",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Linha Dior Homme (Íris Amadeirada Sofisticada)",
+                fixation: "Alta (8h a 10h)",
+                projection: "Marcante e elegante",
+                topNotes: "Lavanda, limão siciliano e cardamomo",
+                heartNotes: "Íris, violeta e fava tonka",
+                baseNotes: "Madeiras nobres, âmbar e almíscar",
+                ideal: "Jantares, encontros, eventos formais, trabalho elegante e noites amenas.",
+                pitch: "Elegância pura com íris atalcada e fundo quente! Ideal para quem quer passar sofisticação e charme sem exagero.",
+                trivia: "O acorde de íris com violeta entrega aquele toque elegante e refinado muito valorizado em fragrâncias sociais e noturnas.",
+                inStock: true
+            },
+            {
+                id: 19,
+                name: "Jobs LAB 8 EDP 100ml",
+                brand: "LAB 8",
+                category: "noturno",
+                categoryLabel: "Noite",
+                inspiration: "Amadeirado Especiado / Linha Jobs LAB 8",
+                fixation: "Alta (8h+)",
+                projection: "Forte e envolvente",
+                topNotes: "Maçã, bergamota e flor de laranjeira",
+                heartNotes: "Canela, cravo-da-índia, cardamomo e lavanda",
+                baseNotes: "Baunilha, sândalo, cumarina, cedro e vetiver",
+                ideal: "Noites, encontros, reuniões importantes e ocasiões em que se busca presença.",
+                pitch: "Presença marcante com abertura frutada especiada e fundo quente de baunilha e madeiras. Perfeito para quem quer se destacar!",
+                trivia: "A linha Jobs da LAB 8 aposta em contrastes entre saída vibrante e base amadeirada quente para transmitir foco e postura.",
+                inStock: true
+            },
+            {
+                id: 6,
+                name: "Club de Nuit Intense Man 105ml",
+                brand: "Armaf",
+                category: "versatil",
+                categoryLabel: "Dia a dia",
+                inspiration: "Creed Aventus",
+                fixation: "Alta (8h a 10h)",
+                projection: "Forte na primeira hora",
+                topNotes: "Limão, abacaxi, bergamota, maçã e groselha",
+                heartNotes: "Bétula (esfumaçado), jasmim e rosa",
+                baseNotes: "Almíscar, âmbar cinzento, patchouli e baunilha",
+                ideal: "Trabalho (com moderação), eventos sociais, encontros e uso assinatura.",
+                pitch: "O maior campeão de elogios da perfumaria árabe! Traz o DNA milionário do Creed Aventus com abacaxi cítrico e fundo amadeirado esfumaçado.",
+                trivia: "A abertura cítrica bem afiada com limão e abacaxi costuma impressionar mais após os primeiros 15 minutos, quando surge o toque esfumaçado da bétula.",
+                inStock: true
+            },
+            {
+                id: 7,
+                name: "Brand Collection 054 (25ml)",
+                brand: "Brand Collection",
+                category: "versatil",
+                categoryLabel: "Dia a dia",
+                inspiration: "Creed Aventus",
+                fixation: "Média a Alta (6h a 8h)",
+                projection: "Moderada",
+                topNotes: "Abacaxi, bergamota, maçã e groselha",
+                heartNotes: "Vidoeiro, patchouli, jasmim e rosa",
+                baseNotes: "Musgo de carvalho, almíscar e baunilha",
+                ideal: "Levar na mochila/carro, academia, trabalho e dia a dia.",
+                pitch: "O cheiro do sucesso em frasco portátil de 25ml! Perfeito para deixar no carro ou na mochila e reaplicar antes de qualquer compromisso.",
+                trivia: "Por ter 25ml, é ótimo para testar na pele ou manter na necessaire sem ocupar espaço, mantendo a assinatura amadeirada frutada.",
+                inStock: true
+            },
+            {
+                id: 8,
+                name: "CK IN2U For Him EDT 100ml",
+                brand: "Calvin Klein",
+                category: "versatil",
+                categoryLabel: "Dia a dia",
+                inspiration: "Fragrância Original Designer",
+                fixation: "Moderada (5h a 6h)",
+                projection: "Íntima a moderada",
+                topNotes: "Limão e folha de tomate",
+                heartNotes: "Vagem de cacau",
+                baseNotes: "Cedro, vetiver e almíscar branco",
+                ideal: "Faculdade, trabalho, dias quentes e uso casual diurno.",
+                pitch: "Frescor cítrico moderno com um toque surpreendente de cacau no coração. Jovem, despojado e impossível de desagradar no dia a dia.",
+                trivia: "Combina folha de tomate e limão na saída com cacau no corpo — um contraste incomum que deixa o frescor menos óbvio.",
+                inStock: true
+            },
+            {
+                id: 9,
+                name: "Linha Antonio Banderas 200ml",
+                brand: "Antonio Banderas",
+                category: "versatil",
+                categoryLabel: "Dia a dia",
+                inspiration: "Clássicos Designers (Blue Seduction / Golden Secret)",
+                fixation: "Moderada (5h a 7h)",
+                projection: "Agradável e não invasiva",
+                topNotes: "Cítricos, menta e melão (frescos) ou maçã e hortelã",
+                heartNotes: "Notas aquáticas ou canela e pimenta",
+                baseNotes: "Madeiras, âmbar e almíscar",
+                ideal: "Uso diário abundante (frasco gigante de 200ml), trabalho e academia.",
+                pitch: "Frasco gigante de 200ml para usar sem dó! O melhor custo-benefício importado para trabalhar e sair cheiroso todos os dias.",
+                trivia: "O frasco de 200ml rende centenas de borrifadas, sendo uma das opções mais econômicas por mililitro para quem gosta de perfumar bastante.",
+                inStock: true
+            },
+            {
+                id: 10,
+                name: "Miami Blue EDP 100ml (Unissex)",
+                brand: "Ard Al Zaafaran",
+                category: "fresco",
+                categoryLabel: "Frescos",
+                inspiration: "Stéphane Humbert Lucas God of Fire",
+                fixation: "Média a Alta (7h a 8h)",
+                projection: "Moderada e vibrante",
+                topNotes: "Manga suculenta, toranja, limão e gengibre",
+                heartNotes: "Cardamomo, jasmim e violeta",
+                baseNotes: "Âmbar cinzento, madeiras e benjoim",
+                ideal: "Dias muito quentes, verão, praia, piscina e passeios ao ar livre.",
+                pitch: "Explosão tropical de manga gelada com gengibre e limão! Inspirado no nicho God of Fire, é perfeito para brilhar no calor.",
+                trivia: "Perfumes com nota protagonista de manga madura ganharam enorme destaque na perfumaria moderna por fugir dos cítricos tradicionais de verão.",
+                inStock: true
+            },
+            {
+                id: 11,
+                name: "Nautica Voyage EDT 100ml",
+                brand: "Nautica",
+                category: "fresco",
+                categoryLabel: "Frescos",
+                inspiration: "Fragrância Original Designer",
+                fixation: "Moderada (6h)",
+                projection: "Limpa e refrescante",
+                topNotes: "Maçã verde e folhas verdes",
+                heartNotes: "Flor de lótus e mimosa",
+                baseNotes: "Almíscar, cedro, musgo de carvalho e âmbar",
+                ideal: "Calor intenso, trabalho, faculdade, academia e pós-banho.",
+                pitch: "O rei do frescor! Cheiro de maçã verde gelada com brisa marítima que transmite limpeza imediata nos dias mais quentes.",
+                trivia: "É um dos clássicos aquáticos/verdes mais recomendados para iniciantes na perfumaria por ser fácil de agradar e funcionar muito bem no calor.",
+                inStock: true
+            },
+            {
+                id: 12,
+                name: "Nautica Blue EDT 100ml",
+                brand: "Nautica",
+                category: "fresco",
+                categoryLabel: "Frescos",
+                inspiration: "Fragrância Original Designer",
+                fixation: "Leve a Moderada (4h a 5h)",
+                projection: "Suave e confortável",
+                topNotes: "Abacaxi, bergamota e pêssego",
+                heartNotes: "Nenúfar (flor aquática) e jasmim",
+                baseNotes: "Sândalo, almíscar e cedro",
+                ideal: "Academia, caminhadas, dias muito quentes e uso pós-banho.",
+                pitch: "Leve, aquático e frutado com abacaxi e pêssego. Ideal para treinar ou sair do banho com sensação refrescante.",
+                trivia: "Ao contrário do Voyage que puxa mais para o verde da maçã, o Blue destaca frutas tropicais leves com fundo amadeirado macio.",
+                inStock: true
+            },
+            {
+                id: 13,
+                name: "Body Spray Odyssey Limoni Fresh 200ml",
+                brand: "Armaf (Unissex)",
+                category: "fresco",
+                categoryLabel: "Frescos",
+                inspiration: "Louis Vuitton Afternoon Swim",
+                fixation: "Leve (3h a 5h - ideal para reaplicar)",
+                projection: "Refrescante",
+                topNotes: "Limão, laranja doce, mandarina e bergamota",
+                heartNotes: "Gengibre, flor de laranjeira e notas marinhas",
+                baseNotes: "Chá azul, âmbar e almíscar",
+                ideal: "Pós-treino, pós-banho, dias escaldantes e para carregar na bolsa.",
+                pitch: "Inspirado no luxuoso Afternoon Swim da Louis Vuitton! Um banho de cítricos gelados com gengibre em frasco de 200ml.",
+                trivia: "O Afternoon Swim da Louis Vuitton é famoso por parecer uma laranja/mandarina espremida na hora com gengibre vibrante — exatamente essa vibe cítrica.",
+                inStock: true
+            },
+            {
+                id: 20,
+                name: "Effervescent LAB 8 EDP 100ml",
+                brand: "LAB 8 Niche (Compartilhável)",
+                category: "fresco",
+                categoryLabel: "Frescos",
+                inspiration: "Cítrico Amadeirado Ambarado de Nicho",
+                fixation: "Média a Alta (7h a 8h)",
+                projection: "Vibrante e marcante",
+                topNotes: "Toranja, bergamota, jasmim e magnólia",
+                heartNotes: "Gengibre, notas herbais e nuances atalcadas",
+                baseNotes: "Almíscar, cedro, âmbar, patchouli e raiz de orris",
+                ideal: "Dia a dia, trabalho, viagens, clima quente e saídas casuais.",
+                pitch: "Cítrico borbulhante com gengibre e fundo amadeirado elegante! Fresco de verdade, mas com corpo e fixação que surpreendem no calor.",
+                trivia: "Mistura o brilho cítrico de toranja e bergamota com gengibre e raiz de orris, evitando aquele frescor que some rápido demais.",
+                inStock: true
+            },
+            {
+                id: 14,
+                name: "Mawwal Basir Dreams EDP 100ml",
+                brand: "Mawwal Arabia (Feminino)",
+                category: "feminino",
+                categoryLabel: "Femininos",
+                inspiration: "Linha Autoral Árabe (Cereja & Café Gourmand)",
+                fixation: "Alta (8h+)",
+                projection: "Marcante e sedutora",
+                topNotes: "Cereja suculenta e mandarina verde",
+                heartNotes: "Jasmim, flor de laranjeira e chá preto",
+                baseNotes: "Baunilha de Madagascar, café e patchouli",
+                ideal: "Encontros românticos, jantares, noites e climas amenos.",
+                pitch: "Cereja licorosa envolvida em baunilha de Madagascar e um toque adulto de café e chá preto. Doce sofisticado que não fica infantil!",
+                trivia: "A combinação de cereja com café e chá preto traz um contraponto levemente amargo e encorpado que deixa o dulçor mais elegante.",
+                inStock: true
+            },
+            {
+                id: 15,
+                name: "Sabah Al Ward EDP 100ml",
+                brand: "Al Wataniah (Feminino)",
+                category: "feminino",
+                categoryLabel: "Femininos",
+                inspiration: "Givenchy L'Interdit / Natura Ilía Secreto",
+                fixation: "Alta (8h a 9h)",
+                projection: "Envolvente e elegante",
+                topNotes: "Pimenta rosa e mandarina",
+                heartNotes: "Flor de laranjeira, vagem de cacau e jasmim sambac",
+                baseNotes: "Baunilha, fava tonka e patchouli",
+                ideal: "Noites, eventos sociais, encontros e dias frescos.",
+                pitch: "Um dos árabes femininos mais vendidos do Brasil! Flor de laranjeira cremosa com cacau e baunilha que entrega aura de mulher poderosa.",
+                trivia: "O acorde de flor de laranjeira com cacau e baunilha virou uma assinatura muito querida por quem gosta de perfumes florais quentes e marcantes.",
+                inStock: true
+            },
+            {
+                id: 16,
+                name: "Carolina Herrera 212 Sexy EDP",
+                brand: "Carolina Herrera (Feminino)",
+                category: "feminino",
+                categoryLabel: "Femininos",
+                inspiration: "Clássico Original Importado",
+                fixation: "Alta (8h+)",
+                projection: "Sensual e envolvente",
+                topNotes: "Pimenta rosa, mandarina e bergamota",
+                heartNotes: "Algodão-doce, gardênia e flores",
+                baseNotes: "Baunilha, almíscar, sândalo e caramelo",
+                ideal: "Encontros, jantares a dois, festas e noites.",
+                pitch: "Ícone absoluto da sensualidade feminina! Mistura pimenta rosa com algodão-doce, baunilha e almíscar quente na pele.",
+                trivia: "Foi um dos perfumes que ajudaram a popularizar a nota de algodão-doce na perfumaria de forma noturna e envolvente.",
+                inStock: true
+            },
+            {
+                id: 17,
+                name: "Body Spray Club de Nuit Woman 200ml",
+                brand: "Armaf (Feminino)",
+                category: "feminino",
+                categoryLabel: "Femininos",
+                inspiration: "Chanel Coco Mademoiselle",
+                fixation: "Leve a Moderada (4h a 6h)",
+                projection: "Elegante e limpa",
+                topNotes: "Laranja, bergamota, toranja e pêssego",
+                heartNotes: "Rosa, jasmim, gerânio e lichia",
+                baseNotes: "Patchouli, baunilha, almíscar e vetiver",
+                ideal: "Trabalho, dia a dia, pós-banho e uso diário sofisticado.",
+                pitch: "Cheiro de 'mulher rica' por uma fração do preço! Inspirado no Coco Mademoiselle, perfeito para usar no corpo todo após o banho.",
+                trivia: "A estrutura cítrica com rosa e patchouli é clássica da alta perfumaria francesa, trazendo sensação arrumada e elegante desde a saída.",
+                inStock: true
+            }
+        ];
+
+        // Combos sugeridos para aumentar ticket na Live
+        const combosData = [
+            {
+                title: "Combo Dia & Noite Masculino",
+                badge: "Mais vendido",
+                items: ["Nautica Voyage 100ml", "Lattafa Asad 100ml"],
+                argument: "Leve o frescor da maçã verde para trabalhar de dia e o poder do Asad para conquistar à noite. Um kit completo para a semana toda!"
+            },
+            {
+                title: "Combo Perfume + Body Spray",
+                badge: "Ticket médio",
+                items: ["Club de Nuit Intense Man", "Body Spray Odyssey Limoni 200ml"],
+                argument: "Use o Body Spray cítrico gelado pós-treino ou no calor, e guarde o Club de Nuit para ocasiões especiais e encontros."
+            },
+            {
+                title: "Combo Casal Árabe",
+                badge: "Presente",
+                items: ["Lattafa Asad (Ele)", "Sabah Al Ward ou Basir Dreams (Ela)"],
+                argument: "Dois campeões de elogios da perfumaria árabe com fixação extrema para o casal sair marcando presença juntos."
+            },
+            {
+                title: "Combo Elegância Feminina",
+                badge: "Autoestima",
+                items: ["Body Spray Club de Nuit Woman", "Mawwal Basir Dreams"],
+                argument: "Sofisticação floral limpa para o escritório durante o dia e sensualidade de cereja com baunilha para o jantar à noite."
+            }
+        ];
+
+        let currentCategory = 'todos';
+        let currentView = 'catalogo';
+        let activePerfumeId = null;
+        let isLiveMode = false;
+        const STORAGE_KEY = 'scentlive_pro_estoque_v1';
+
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        perfumesData = parsed;
+                    }
+                }
+            } catch (err) {
+                console.warn('Não foi possível carregar dados salvos:', err);
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(perfumesData));
+            } catch (err) {
+                console.warn('Não foi possível salvar dados:', err);
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateCounts();
+            renderCatalog();
+            lucide.createIcons();
+        });
+
+        function updateCounts() {
+            const availableCount = perfumesData.filter(p => p.inStock).length;
+            const outOfStockCount = perfumesData.length - availableCount;
+            document.getElementById('count-todos').innerText = `${availableCount}/${perfumesData.length}`;
+            const summaryEl = document.getElementById('headerStockSummary');
+            if (summaryEl) {
+                summaryEl.innerText = `${availableCount} disponíveis · ${outOfStockCount} esgotados`;
+            }
+        }
+
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.classList.remove('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/60');
+                    btn.classList.add('bg-amber-500', 'text-slate-950');
+                } else {
+                    btn.classList.add('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/60');
+                    btn.classList.remove('bg-amber-500', 'text-slate-950');
+                }
+            });
+            if (currentView !== 'catalogo') switchView('catalogo');
+            renderCatalog();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            renderCatalog();
+        }
+
+        function filterPerfumes() {
+            const query = document.getElementById('searchInput').value;
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (query.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            if (currentView !== 'catalogo') switchView('catalogo');
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            const listEl = document.getElementById('perfumeList');
+            const emptyEl = document.getElementById('emptyState');
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            const filtered = perfumesData.filter(p => {
+                const matchesCat = currentCategory === 'todos' || p.category === currentCategory;
+                const searchBlob = `${p.name} ${p.brand} ${p.inspiration} ${p.topNotes} ${p.heartNotes} ${p.baseNotes} ${p.ideal}`.toLowerCase();
+                const matchesQuery = !query || searchBlob.includes(query);
+                return matchesCat && matchesQuery;
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            listEl.innerHTML = filtered.map(p => `
+                <div onclick="openDetailModal(${p.id})" class="clean-card rounded-2xl p-3.5 cursor-pointer ${!p.inStock ? 'opacity-45' : ''}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-semibold text-white truncate">${p.name}</h3>
+                                ${!p.inStock ? `<span class="text-[10px] font-medium text-rose-400 shrink-0">Esgotado</span>` : ''}
+                            </div>
+                            <p class="text-xs text-amber-400/90 mt-0.5 truncate">Insp: ${p.inspiration}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="text-[11px] text-slate-400 block">${p.fixation.split('(')[0].trim()}</span>
+                            <span class="text-[10px] text-slate-500 block">${p.categoryLabel}</span>
+                        </div>
+                    </div>
+
+                    ${isLiveMode ? `
+                        <div class="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-1.5 text-xs">
+                            <p class="text-slate-200 leading-relaxed">"${p.pitch}"</p>
+                            <p class="text-[11px] text-amber-300/90 leading-relaxed">Curiosidade: ${p.trivia}</p>
+                            <p class="text-[11px] text-slate-400">Ideal: ${p.ideal}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderCombos() {
+            const listEl = document.getElementById('perfumeList');
+            document.getElementById('emptyState').classList.add('hidden');
+
+            listEl.innerHTML = `
+                <div class="col-span-2 mb-1">
+                    <h2 class="text-sm font-semibold text-white">Sugestões de combos</h2>
+                    <p class="text-xs text-slate-400">Combinações prontas com o seu estoque.</p>
+                </div>
+                ${combosData.map(c => `
+                    <div class="clean-card rounded-2xl p-3 space-y-2 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-1.5">
+                                <h3 class="text-xs font-semibold text-white leading-snug">${c.title}</h3>
+                                <span class="text-[10px] font-medium text-amber-400 shrink-0">${c.badge}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-300 font-medium mt-1.5 leading-snug">${c.items.join(' + ')}</p>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed pt-1.5 border-t border-slate-800/70">"${c.argument}"</p>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function switchView(view) {
+            currentView = view;
+            const navCat = document.getElementById('nav-catalogo');
+            const navCombos = document.getElementById('nav-combos');
+
+            if (view === 'catalogo') {
+                navCat.classList.replace('text-slate-500', 'text-amber-400');
+                navCombos.classList.replace('text-amber-400', 'text-slate-500');
+                renderCatalog();
+            } else {
+                navCombos.classList.replace('text-slate-500', 'text-amber-400');
+                navCat.classList.replace('text-amber-400', 'text-slate-500');
+                renderCombos();
+            }
+        }
+
+        function renderCatalog() {
+            const listEl = document.getElementById('perfumeList');
+            const emptyEl = document.getElementById('emptyState');
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            const filtered = perfumesData.filter(p => {
+                const matchesCat = currentCategory === 'todos' || p.category === currentCategory;
+                const searchBlob = `${p.name} ${p.brand} ${p.inspiration} ${p.topNotes} ${p.heartNotes} ${p.baseNotes} ${p.ideal}`.toLowerCase();
+                const matchesQuery = !query || searchBlob.includes(query);
+                return matchesCat && matchesQuery;
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            listEl.innerHTML = filtered.map(p => `
+                <div onclick="openDetailModal(${p.id})" class="clean-card ${isLiveMode ? 'live-active-card' : ''} rounded-xl p-2.5 cursor-pointer flex flex-col justify-between ${!p.inStock ? 'opacity-45' : ''}">
+                    <div class="min-w-0">
+                        <div class="flex items-start justify-between gap-1">
+                            <h3 class="text-xs font-semibold text-white leading-snug line-clamp-2">${p.name}</h3>
+                            ${!p.inStock ? `<span class="text-[9px] font-medium text-rose-400 shrink-0">Esgotado</span>` : ''}
+                        </div>
+                        <p class="text-[11px] text-amber-400/90 mt-1 truncate">Insp: ${p.inspiration}</p>
+                    </div>
+
+                    <div class="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+                        <span class="truncate">${p.fixation.split('(')[0].trim()}</span>
+                        <span class="text-slate-500 shrink-0 ml-1">${p.categoryLabel}</span>
+                    </div>
+
+                    ${isLiveMode ? `
+                        <div class="mt-2 pt-2 border-t border-amber-500/20 space-y-1.5 text-[11px]">
+                            <p class="text-slate-100 leading-snug">"${p.pitch}"</p>
+                            <p class="text-[10px] text-amber-300 leading-snug">Curiosidade: ${p.trivia}</p>
+                            <p class="text-[10px] text-slate-400 leading-snug">Ideal: ${p.ideal}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function toggleLiveMode() {
+            isLiveMode = !isLiveMode;
+            const navLive = document.getElementById('nav-livemode');
+            const banner = document.getElementById('liveBanner');
+
+            if (isLiveMode) {
+                navLive.classList.replace('text-slate-500', 'text-amber-400');
+                banner.classList.remove('hidden');
+                banner.classList.add('flex');
+                showToast('Modo Live ativado');
+            } else {
+                navLive.classList.replace('text-amber-400', 'text-slate-500');
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+                showToast('Modo Live desativado');
+            }
+
+            if (currentView === 'catalogo') {
+                renderCatalog();
+            }
+        }
+
+        function openDetailModal(id) {
+            const p = perfumesData.find(item => item.id === id);
+            if (!p) return;
+            activePerfumeId = id;
+
+            document.getElementById('modalCategoryBadge').innerText = p.categoryLabel;
+            document.getElementById('modalTitle').innerText = p.name;
+            document.getElementById('modalBrand').innerText = p.brand;
+            document.getElementById('modalInspiration').innerText = p.inspiration;
+            document.getElementById('modalPitch').innerText = p.pitch;
+            document.getElementById('modalFixation').innerText = p.fixation;
+            document.getElementById('modalProjection').innerText = p.projection;
+            document.getElementById('modalTopNotes').innerText = p.topNotes;
+            document.getElementById('modalHeartNotes').innerText = p.heartNotes;
+            document.getElementById('modalBaseNotes').innerText = p.baseNotes;
+            document.getElementById('modalIdeal').innerText = p.ideal;
+            document.getElementById('modalTrivia').innerText = p.trivia;
+
+            updateModalStockUI(p.inStock);
+
+            const modal = document.getElementById('detailModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function updateModalStockUI(inStock) {
+            const statusEl = document.getElementById('modalStockStatus');
+            const btnEl = document.getElementById('toggleStockBtn');
+            if (inStock) {
+                statusEl.innerText = 'Em estoque';
+                statusEl.className = 'text-xs font-semibold text-emerald-400';
+                btnEl.innerText = 'Marcar esgotado';
+                btnEl.className = 'px-3.5 py-2 rounded-xl font-medium text-xs bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 transition active:scale-95';
+            } else {
+                statusEl.innerText = 'Esgotado';
+                statusEl.className = 'text-xs font-semibold text-rose-400';
+                btnEl.innerText = 'Repor estoque';
+                btnEl.className = 'px-3.5 py-2 rounded-xl font-medium text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition active:scale-95';
+            }
+        }
+
+        function toggleCurrentStock() {
+            const p = perfumesData.find(item => item.id === activePerfumeId);
+            if (!p) return;
+            p.inStock = !p.inStock;
+            saveToStorage();
+            updateCounts();
+            updateModalStockUI(p.inStock);
+            renderCatalog();
+            showToast(p.inStock ? 'Estoque reposto' : 'Marcado como esgotado');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detailModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function copyPitch() {
+            const text = document.getElementById('modalPitch').innerText;
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Fala copiada');
+        }
+
+        function openAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveNewPerfume(e) {
+            e.preventDefault();
+            const catMap = {
+                noturno: 'Noite',
+                versatil: 'Dia a dia',
+                fresco: 'Frescos',
+                feminino: 'Femininos'
+            };
+            const cat = document.getElementById('newCategory').value;
+            const name = document.getElementById('newName').value;
+            const insp = document.getElementById('newInspiration').value;
+            const fix = document.getElementById('newFixation').value || 'Alta (8h+)';
+            const proj = document.getElementById('newProjection').value || 'Marcante';
+            const notes = document.getElementById('newNotes').value || 'Notas selecionadas';
+            const ideal = document.getElementById('newIdeal').value || 'Ocasiões especiais e uso versátil';
+            const trivia = document.getElementById('newTrivia').value || 'Destaque do estoque com ótima aceitação em apresentações ao vivo.';
+
+            perfumesData.unshift({
+                id: Date.now(),
+                name: name,
+                brand: "Novo no estoque",
+                category: cat,
+                categoryLabel: catMap[cat],
+                inspiration: insp,
+                fixation: fix,
+                projection: proj,
+                topNotes: notes,
+                heartNotes: "Acordes aromáticos e florais",
+                baseNotes: "Fundo amadeirado e fixador",
+                ideal: ideal,
+                pitch: `Novidade no estoque! ${name}, inspirado no ${insp}, ideal para ${ideal.toLowerCase()}.`,
+                trivia: trivia,
+                inStock: true
+            });
+
+            saveToStorage();
+            updateCounts();
+            renderCatalog();
+            closeAddModal();
+            document.getElementById('addPerfumeForm').reset();
+            showToast('Perfume adicionado');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2200);
+        }
+    </script>
+</body>
+</html>
